@@ -11,18 +11,33 @@ GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID")
 def home():
     return "MNP Bot Chalu Hai!"
 
+# Yeh naya hissa /start ka jawab dene ke liye hai
+@app.route('/telegram', methods=['POST'])
+def telegram_webhook():
+    data = request.json or {}
+    message = data.get("message", {})
+    text = message.get("text", "")
+    chat_id = message.get("chat", {}).get("id")
+
+    if text == "/start" and chat_id:
+        url = f"https://telegram.org{TOKEN}/sendMessage"
+        requests.post(url, json={
+            "chat_id": chat_id,
+            "text": "✅ बॉट 100% चालू है! जैसे ही FTA MNP का SMS आएगा, यह अपने आप ग्रुप में भेज देगा।"
+        })
+    return {"status": "ok"}, 200
+
 @app.route('/sms', methods=['POST'])
 def receive_sms():
     data = request.json or {}
     sender = str(data.get("sender", ""))
     message = str(data.get("message", ""))
 
-    # Filter: Sirf 'AIRDRT' sender ya 'FTA MNP' wale msg hi aage bhejega
     if "AIRDRT" in sender.upper() or "FTA MNP" in message:
         url = f"https://telegram.org{TOKEN}/sendMessage"
         payload = {
             "chat_id": GROUP_CHAT_ID,
-            "text": message  # Bina kisi badlav ke as-it-is bhejega
+            "text": message
         }
         requests.post(url, json=payload)
         return {"status": "forwarded"}, 200
